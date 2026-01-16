@@ -1,194 +1,142 @@
-import time
-import random
-import sys
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Adventurers</title>
+    <style>
+        body { background:black; color:lime; font-family:monospace; text-align:center; padding:20px; }
+        #story { white-space: pre-line; margin:20px; }
+        button { font-size:18px; padding:10px 20px; margin:5px; background:darkred; color:white; border:none; cursor:pointer; }
+        #healthbar { width:300px; height:25px; border:2px solid lime; margin:10px auto; }
+        #health { height:100%; width:100%; background:lime; }
+    </style>
+</head>
+<body>
 
-# =========================
-# GAME DATA
-# =========================
+<h1>🗡️ ADVENTURERS 🗡️</h1>
+<div id="story">Press START to begin your adventure!</div>
+<div id="healthbar"><div id="health"></div></div>
 
-# Rooms and connections
-rooms = {
-    'start': {
-        'description': "You wake up in a dark cave. Water drips from the ceiling.",
-        'connections': {'north': 'dark_hall', 'east': 'npc_room'},
-        'items': ['rusty key']
-    },
-    'dark_hall': {
-        'description': "A shadowy hallway stretches before you. You hear growls.",
-        'connections': {'south': 'start', 'north': 'armory'},
-        'items': []
-    },
-    'armory': {
-        'description': "You found an abandoned armory. A dagger lies here.",
-        'connections': {'south': 'dark_hall'},
-        'items': ['dagger']
-    },
-    'npc_room': {
-        'description': "A strange figure stands in the room. They look like they have a quest.",
-        'connections': {'west': 'start'},
-        'items': []
-    },
-    'mintoron_lair': {
-        'description': "You enter a huge chamber. Mintoron stands before you, glowing with power!",
-        'connections': {},
-        'items': []
+<div id="buttons">
+    <button onclick="startGame()">START GAME</button>
+</div>
+
+<script>
+let hp = 100;
+let inventory = [];
+let megaMoney = 0;
+let mintoronHP = 10000;
+let inMintoronFight = false;
+
+function updateHealth() {
+    let bar = document.getElementById("health");
+    bar.style.width = hp + "%";
+}
+
+function playSound(name) {
+    let story = document.getElementById("story");
+    story.innerText += `\n*${name.toUpperCase()} SOUND*`;
+}
+
+function startGame() {
+    document.getElementById("story").innerText = "You wake up in a dark cave. Water drips from the ceiling.\nExits: north, east";
+    document.getElementById("buttons").innerHTML = `
+        <button onclick="go('north')">Go North</button>
+        <button onclick="go('east')">Go East</button>
+        <button onclick="inventoryFunc()">Inventory</button>
+    `;
+    updateHealth();
+}
+
+function go(direction) {
+    let story = document.getElementById("story");
+    if(direction === "north") {
+        story.innerText = "You enter a shadowy hall. A dagger lies here!";
+        inventory.push("dagger");
+        playSound("pickup");
+        story.innerText += "\nYou picked up a dagger!";
+        story.innerText += "\nExits: south, north (Mintoron Lair)";
+        document.getElementById("buttons").innerHTML = `
+            <button onclick="go('south')">Go South</button>
+            <button onclick="go('mintoron')">Go North</button>
+            <button onclick="inventoryFunc()">Inventory</button>
+        `;
+    } else if(direction === "south") {
+        story.innerText = "You return to the cave entrance. Exits: north, east";
+        document.getElementById("buttons").innerHTML = `
+            <button onclick="go('north')">Go North</button>
+            <button onclick="go('east')">Go East</button>
+            <button onclick="inventoryFunc()">Inventory</button>
+        `;
+    } else if(direction === "mintoron") {
+        story.innerText = "You enter Mintoron's lair! Prepare for battle!";
+        inMintoronFight = true;
+        document.getElementById("buttons").innerHTML = `
+            <button onclick="attack()">Attack</button>
+            <button onclick="heal()">Heal</button>
+        `;
+    } else if(direction === "east") {
+        story.innerText = "You meet an NPC. They give you 50 MEGA MONEY.";
+        megaMoney += 50;
+        story.innerText += `\nMEGA MONEY: ${megaMoney}`;
+        document.getElementById("buttons").innerHTML = `
+            <button onclick="go('west')">Go West</button>
+            <button onclick="inventoryFunc()">Inventory</button>
+        `;
+    } else if(direction === "west") {
+        story.innerText = "You return to the cave entrance. Exits: north, east";
+        document.getElementById("buttons").innerHTML = `
+            <button onclick="go('north')">Go North</button>
+            <button onclick="go('east')">Go East</button>
+            <button onclick="inventoryFunc()">Inventory</button>
+        `;
     }
 }
 
-# =========================
-# PLAYER STATE
-# =========================
-
-player = {
-    'current_room': 'start',
-    'inventory': [],
-    'hp': 100,
-    'mega_money': 0
+function attack() {
+    let story = document.getElementById("story");
+    if(inventory.includes("dagger")) {
+        let dmg = Math.floor(Math.random() * 200) + 100;
+        mintoronHP -= dmg;
+        story.innerText = `You hit Mintoron for ${dmg} damage! Mintoron HP: ${mintoronHP}`;
+        playSound("sword_hit");
+    } else {
+        let dmg = Math.floor(Math.random() * 10) + 5;
+        mintoronHP -= dmg;
+        story.innerText = `You hit Mintoron for ${dmg} damage! Mintoron HP: ${mintoronHP}`;
+        playSound("punch");
+    }
+    // Mintoron attacks back
+    let mdmg = Math.floor(Math.random() * 150) + 50;
+    hp -= mdmg;
+    playSound("roar");
+    story.innerText += `\nMintoron attacks you for ${mdmg} damage! HP: ${hp}`;
+    updateHealth();
+    if(hp <= 0) {
+        story.innerText = "YOU DIED! [SCREAM]";
+        playSound("scream");
+        document.getElementById("buttons").innerHTML = `<button onclick="location.reload()">Restart</button>`;
+    } else if(mintoronHP <= 0) {
+        story.innerText = "YOU DEFEATED MINTORON! VICTORY!";
+        playSound("victory");
+        document.getElementById("buttons").innerHTML = `<button onclick="location.reload()">Restart</button>`;
+    }
 }
 
-# Boss
-mintoron = {
-    'hp': 10000
+function heal() {
+    let story = document.getElementById("story");
+    let healAmt = Math.floor(Math.random()*30)+20;
+    hp += healAmt;
+    if(hp>100) hp=100;
+    story.innerText += `\nYou heal for ${healAmt} HP. HP: ${hp}`;
+    playSound("heal");
+    updateHealth();
 }
 
-# =========================
-# UTILITY FUNCTIONS
-# =========================
+function inventoryFunc() {
+    let story = document.getElementById("story");
+    story.innerText += `\nInventory: ${inventory.join(", ")} | MEGA MONEY: ${megaMoney}`;
+}
+</script>
 
-def type_text(text, delay=0.05):
-    for line in text.split('\n'):
-        print(line)
-        time.sleep(delay)
-
-def divider():
-    print("\n" + "="*70 + "\n")
-
-def show_room():
-    room = rooms[player['current_room']]
-    divider()
-    type_text(room['description'])
-    if room['items']:
-        type_text("Items here: " + ", ".join(room['items']))
-    if room['connections']:
-        type_text("Exits: " + ", ".join(room['connections'].keys()))
-    divider()
-
-def play_sound(name):
-    # Fake sound
-    type_text(f"*{name.upper()} SOUND*")
-
-def npc_interaction():
-    type_text("NPC: 'I need you to defeat Mintoron! Here, take 50 MEGA MONEY as a reward for completing a small task.'")
-    player['mega_money'] += 50
-    type_text(f"You now have {player['mega_money']} MEGA MONEY.")
-
-# =========================
-# GAME LOGIC
-# =========================
-
-def move_player(direction):
-    room = rooms[player['current_room']]
-    if direction not in room['connections']:
-        type_text("You can't go that way!")
-        return
-    player['current_room'] = room['connections'][direction]
-    current = player['current_room']
-    if current == 'npc_room':
-        npc_interaction()
-    if current == 'armory':
-        play_sound("clang")
-    if current == 'mintoron_lair':
-        fight_mintoron()
-
-def take_item(item):
-    room = rooms[player['current_room']]
-    if item in room['items']:
-        room['items'].remove(item)
-        player['inventory'].append(item)
-        type_text(f"You picked up the {item}.")
-        play_sound("pickup")
-    else:
-        type_text("That item is not here.")
-
-def fight_mintoron():
-    type_text("Mintoron roars! Prepare for battle!")
-    while player['hp'] > 0 and mintoron['hp'] > 0:
-        divider()
-        type_text(f"Mintoron HP: {mintoron['hp']} | Your HP: {player['hp']}")
-        type_text("Actions: attack / heal / run")
-        action = input("> ").lower().strip()
-        if action == "attack":
-            if 'dagger' in player['inventory']:
-                dmg = random.randint(100,200)
-            else:
-                dmg = random.randint(5,15)
-            mintoron['hp'] -= dmg
-            type_text(f"You hit Mintoron for {dmg} damage!")
-            play_sound("sword_hit")
-        elif action == "heal":
-            heal = random.randint(20,30)
-            player['hp'] += heal
-            type_text(f"You heal yourself for {heal} HP.")
-            play_sound("heal")
-        elif action == "run":
-            type_text("You cannot escape Mintoron!")
-            continue
-        else:
-            type_text("Invalid action.")
-            continue
-        
-        # Mintoron attacks
-        mdmg = random.randint(50,150)
-        player['hp'] -= mdmg
-        type_text(f"Mintoron attacks you for {mdmg} damage!")
-        play_sound("roar")
-    
-    if player['hp'] <= 0:
-        type_text("YOU DIED. [SCREAM]")
-        play_sound("scream")
-        sys.exit()
-    else:
-        type_text("YOU DEFEATED MINTORON! You are victorious!")
-        play_sound("victory")
-        sys.exit()
-
-def show_inventory():
-    type_text(f"Inventory: {', '.join(player['inventory'])}")
-    type_text(f"MEGA MONEY: {player['mega_money']}")
-
-# =========================
-# MAIN GAME LOOP
-# =========================
-
-def game_loop():
-    divider()
-    type_text("ADVENTURERS — BETA 1.0")
-    type_text("Survive the cave, find items, complete quests, defeat Mintoron!")
-    divider()
-    
-    while True:
-        show_room()
-        type_text(f"HP: {player['hp']}")
-        type_text("Enter command (go [direction], take [item], inventory, quit)")
-        cmd = input("> ").lower().strip()
-        words = cmd.split()
-        if not words:
-            continue
-        if words[0] == "quit":
-            type_text("Thanks for playing Adventurers!")
-            break
-        elif words[0] == "inventory":
-            show_inventory()
-        elif words[0] == "go" and len(words) > 1:
-            move_player(words[1])
-        elif words[0] == "take" and len(words) > 1:
-            take_item(" ".join(words[1:]))
-        else:
-            type_text("Unknown command. Try again.")
-
-# =========================
-# START GAME
-# =========================
-
-if __name__ == "__main__":
-    game_loop()
+</body>
+</html>
