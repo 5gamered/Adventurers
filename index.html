@@ -4,7 +4,7 @@
     <title>Adventurers</title>
 
     <!-- PyScript -->
-    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css">
     <script defer src="https://pyscript.net/latest/pyscript.js"></script>
 
     <style>
@@ -12,25 +12,85 @@
             background: black;
             color: lime;
             font-family: monospace;
-            font-size: 16px;
+            text-align: center;
             padding: 20px;
+        }
+
+        button {
+            font-size: 18px;
+            margin: 10px;
+            padding: 10px 20px;
+            background: darkred;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #healthbar {
+            width: 300px;
+            height: 25px;
+            border: 2px solid lime;
+            margin: 20px auto;
+        }
+
+        #health {
+            height: 100%;
+            width: 100%;
+            background: lime;
         }
     </style>
 </head>
 
 <body>
     <h1>🗡️ ADVENTURERS 🗡️</h1>
-    <p>Loading game...</p>
+
+    <p id="story">You wake up in a dark cave...</p>
+
+    <!-- HEALTH BAR -->
+    <div id="healthbar">
+        <div id="health"></div>
+    </div>
+    <p id="hp_text">Health: 100 / 100</p>
+
+    <!-- BUTTONS -->
+    <button py-click="explore()">Explore</button>
+    <button py-click="rest()">Rest</button>
+    <button py-click="damage()">Take Damage</button>
 
     <py-script>
-import time
+from js import document
 
-print("Welcome to ADVENTURERS!")
-time.sleep(1)
-print("You wake up in a dark cave...")
-time.sleep(1)
-print("This is a TEST to make sure the game loads.")
-print("If you see this text, IT WORKS!")
+max_hp = 100
+hp = 100
+
+def update_health():
+    bar = document.getElementById("health")
+    text = document.getElementById("hp_text")
+    percent = (hp / max_hp) * 100
+    bar.style.width = f"{percent}%"
+    text.innerText = f"Health: {hp} / {max_hp}"
+
+def explore():
+    document.getElementById("story").innerText = (
+        "You explore deeper into the cave... something watches you."
+    )
+
+def rest():
+    global hp
+    hp = min(max_hp, hp + 10)
+    document.getElementById("story").innerText = "You rest and recover some health."
+    update_health()
+
+def damage():
+    global hp
+    hp -= 15
+    document.getElementById("story").innerText = "Something attacks you in the dark!"
+    if hp <= 0:
+        hp = 0
+        document.getElementById("story").innerText = "YOU DIED."
+    update_health()
+
+update_health()
     </py-script>
 </body>
 </html>
