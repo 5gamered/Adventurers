@@ -1,39 +1,140 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Adventurers</title>
+    <title>Adventurers</title>
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css">
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
 
-  <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css">
-  <script src="https://pyscript.net/latest/pyscript.js"></script>
+    <style>
+        body {
+            background: black;
+            color: lime;
+            font-family: monospace;
+            text-align: center;
+            padding: 30px;
+        }
 
-  <style>
-    body {
-      background: black;
-      color: lime;
-      font-family: monospace;
-      text-align: center;
-      padding: 40px;
-    }
+        button {
+            font-size: 18px;
+            margin: 10px;
+            padding: 12px 25px;
+            background: darkred;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
 
-    button {
-      font-size: 22px;
-      padding: 15px 30px;
-      background: darkred;
-      color: white;
-      border: none;
-    }
-  </style>
+        #game { display: none; }
+        #loading { display: none; }
+
+        #healthbar {
+            width: 300px;
+            height: 25px;
+            border: 2px solid lime;
+            margin: 20px auto;
+        }
+        #health {
+            height: 100%;
+            width: 100%;
+            background: lime;
+        }
+    </style>
 </head>
-
 <body>
 
 <h1>🗡️ ADVENTURERS 🗡️</h1>
 
-<button onclick="alert('START BUTTON WORKS')">
-START GAME
-</button>
+<!-- MENU -->
+<div id="menu">
+    <p>⚠️ Rated R — Scary Content ⚠️</p>
+    <button id="start_btn">START GAME</button>
+</div>
 
-<p>If you see this button, the page is OK.</p>
+<!-- LOADING SCREEN -->
+<div id="loading">
+    <p>Loading game...</p>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game">
+    <p id="story">You wake up in a dark cave...</p>
+
+    <div id="healthbar">
+        <div id="health"></div>
+    </div>
+    <p id="hp_text"></p>
+
+    <button py-click="explore()">Explore</button>
+    <button py-click="rest()">Rest</button>
+    <button py-click="damage()">Take Damage</button>
+</div>
+
+<!-- PYSCRIPT -->
+<py-script>
+from js import document, setTimeout, console
+
+# ===== PLAYER STATS =====
+max_hp = 100
+hp = 100
+
+# ===== HELPER FUNCTIONS =====
+def update_health():
+    bar = document.getElementById("health")
+    text = document.getElementById("hp_text")
+    percent = (hp / max_hp) * 100
+    bar.style.width = f"{percent}%"
+    text.innerText = f"Health: {hp} / {max_hp}"
+
+def play_sound(name):
+    # Fake sounds/voices
+    console.log(f"*{name} sound plays*")
+    document.getElementById("story").innerText += f" [{name.upper()}]"
+
+# ===== GAME BUTTON FUNCTIONS =====
+def explore():
+    global hp
+    play_sound("footsteps")
+    document.getElementById("story").innerText = "You explore deeper... a shadow moves!"
+    hp -= 5
+    play_sound("growl")
+    update_health()
+    if hp <= 0:
+        document.getElementById("story").innerText = "YOU DIED. [SCREAM]"
+        play_sound("scream")
+
+def rest():
+    global hp
+    hp = min(max_hp, hp + 10)
+    play_sound("zzz")
+    document.getElementById("story").innerText = "You rest and regain some health."
+    update_health()
+
+def damage():
+    global hp
+    hp -= 15
+    play_sound("hit")
+    document.getElementById("story").innerText = "Something hits you!"
+    update_health()
+    if hp <= 0:
+        document.getElementById("story").innerText = "YOU DIED. [SCREAM]"
+        play_sound("scream")
+
+# ===== START GAME =====
+def start_game(event):
+    document.getElementById("menu").style.display = "none"
+    document.getElementById("loading").style.display = "block"
+    setTimeout(load_game, 2000)
+
+def load_game():
+    document.getElementById("loading").style.display = "none"
+    document.getElementById("game").style.display = "block"
+    update_health()
+    play_sound("mysterious_music_loop")
+
+# ===== LINK BUTTON =====
+start_btn = document.getElementById("start_btn")
+start_btn.addEventListener("click", start_game)
+</py-script>
 
 </body>
 </html>
