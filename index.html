@@ -3,7 +3,6 @@
 <head>
     <title>Adventurers</title>
 
-    <!-- PyScript -->
     <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css">
     <script defer src="https://pyscript.net/latest/pyscript.js"></script>
 
@@ -17,13 +16,16 @@
         }
 
         button {
-            font-size: 18px;
-            margin: 10px;
-            padding: 10px 20px;
+            font-size: 20px;
+            padding: 15px 30px;
             background: darkred;
             color: white;
             border: none;
             cursor: pointer;
+        }
+
+        #game {
+            display: none;
         }
 
         #healthbar {
@@ -42,55 +44,61 @@
 </head>
 
 <body>
-    <h1>🗡️ ADVENTURERS 🗡️</h1>
 
+<h1>🗡️ ADVENTURERS 🗡️</h1>
+
+<div id="menu">
+    <p>⚠️ Rated R — Scary Content ⚠️</p>
+    <button py-click="start_game()">START GAME</button>
+</div>
+
+<div id="loading" style="display:none;">
+    <p>Loading...</p>
+</div>
+
+<div id="game">
     <p id="story">You wake up in a dark cave...</p>
 
-    <!-- HEALTH BAR -->
     <div id="healthbar">
         <div id="health"></div>
     </div>
-    <p id="hp_text">Health: 100 / 100</p>
+    <p id="hp_text"></p>
 
-    <!-- BUTTONS -->
     <button py-click="explore()">Explore</button>
     <button py-click="rest()">Rest</button>
-    <button py-click="damage()">Take Damage</button>
+</div>
 
-    <py-script>
-from js import document
+<py-script>
+from js import document, setTimeout
 
 max_hp = 100
 hp = 100
 
 def update_health():
-    bar = document.getElementById("health")
-    text = document.getElementById("hp_text")
-    percent = (hp / max_hp) * 100
-    bar.style.width = f"{percent}%"
-    text.innerText = f"Health: {hp} / {max_hp}"
+    document.getElementById("health").style.width = f"{hp}%"
+    document.getElementById("hp_text").innerText = f"Health: {hp} / {max_hp}"
+
+def start_game():
+    document.getElementById("menu").style.display = "none"
+    document.getElementById("loading").style.display = "block"
+    setTimeout(load_game, 2000)
+
+def load_game():
+    document.getElementById("loading").style.display = "none"
+    document.getElementById("game").style.display = "block"
+    update_health()
 
 def explore():
     document.getElementById("story").innerText = (
-        "You explore deeper into the cave... something watches you."
+        "You move deeper into the cave... something breathes nearby."
     )
 
 def rest():
     global hp
     hp = min(max_hp, hp + 10)
-    document.getElementById("story").innerText = "You rest and recover some health."
+    document.getElementById("story").innerText = "You feel a little safer... for now."
     update_health()
+</py-script>
 
-def damage():
-    global hp
-    hp -= 15
-    document.getElementById("story").innerText = "Something attacks you in the dark!"
-    if hp <= 0:
-        hp = 0
-        document.getElementById("story").innerText = "YOU DIED."
-    update_health()
-
-update_health()
-    </py-script>
 </body>
 </html>
