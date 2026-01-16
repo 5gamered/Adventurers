@@ -1,1 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Adventurers</title>
+    <style>
+        body { background:black; color:lime; font-family:monospace; text-align:center; padding:20px; }
+        #story { white-space: pre-line; margin:20px; }
+        button { font-size:18px; padding:10px 20px; margin:5px; background:darkred; color:white; border:none; cursor:pointer; }
+        #healthbar { width:300px; height:25px; border:2px solid lime; margin:10px auto; }
+        #health { height:100%; width:100%; background:lime; }
+    </style>
+</head>
+<body>
 
+<h1>🗡️ ADVENTURERS 🗡️</h1>
+<div id="story">Press START to begin your adventure!</div>
+<div id="healthbar"><div id="health"></div></div>
+
+<div id="buttons">
+    <button onclick="startGame()">START GAME</button>
+</div>
+
+<script>
+let hp = 100;
+let inventory = [];
+let megaMoney = 0;
+let mintoronHP = 10000;
+let inMintoronFight = false;
+
+function updateHealth() {
+    document.getElementById("health").style.width = hp + "%";
+}
+
+function playSound(name) {
+    let story = document.getElementById("story");
+    story.innerText += `\n*${name.toUpperCase()} SOUND*`;
+}
+
+function startGame() {
+    document.getElementById("story").innerText = "You wake up in a dark cave. Water drips from the ceiling.\nExits: north, east";
+    document.getElementById("buttons").innerHTML = `
+        <button onclick="go('north')">Go North</button>
+        <button onclick="go('east')">Go East</button>
+        <button onclick="inventoryFunc()">Inventory</button>
+    `;
+    updateHealth();
+}
+
+function go(direction) {
+    let story = document.getElementById("story");
+    if(direction === "north") {
+        story.innerText = "You enter a shadowy hall. A dagger lies here!";
+        if(!inventory.includes("dagger")) {
+            inventory.push("dagger");
+            playSound("pickup");
+            story.innerText += "\nYou picked up a dagger!";
+        }
+        story.innerText += "\nExits: south, north (Mintoron Lair)";
+        document.getElementById("buttons").innerHTML = `
+            <button onclick="go('south')">Go South</button>
+            <button onclick="go('mintoron')">Go North</button>
+            <button onclick="inventoryFunc()">Inventory</button>
+        `;
+    } else if(direction === "south") {
+        story.innerText = "You return to the cave entrance. Exits: north, east";
+        document.getElementById("buttons").innerHTML = `
+            <button onclick="go('north')">Go North</button>
+            <button onclick="go('east')">Go East</button>
+            <button onclick="inventoryFunc()">Inventory</button>
+        `;
+    } else if(direction === "mintoron") {
+        story.innerText = "You enter Mintoron's lair! Prepare for battle!";
+        inMintoronFight = true;
+        document.getElementById("buttons").innerHTML = `
+            <button onclick="attack()">Attack</button>
+            <button onclick="heal()">Heal</button>
+        `;
+    } else if(direction === "east") {
+        story.innerText = "You meet an NPC. They give you 50 MEGA MONEY.";
+        megaMoney += 50;
+        story.innerText += `\nMEGA MONEY: ${megaMoney}`;
+        document.getElementById("buttons").innerHTML = `
+            <button onclick="go('west')">Go West</button>
+            <button onclick="inventoryFunc()">Inventory</button>
+        `;
+    } else if(direction === "west") {
+        story.innerText = "You return to the cave entrance. Exits: north, east";
+        document.getElementById("buttons").innerHTML = `
+            <button onclick="go('north')">Go North</button>
+            <button onclick="go('east')">Go East</button>
+            <button onclick="inventoryFunc()">Inventory</button>
+        `;
+    }
+}
+
+function attack() {
+    let story = document.getElementById("story");
+    let dmg = Math.floor(Math.random() * 200) + 100;
+    if(inventory.includes("dagger")) dmg += 100;
+    mintoronHP -= dmg;
+    story.innerText = `You hit Mintoron for ${dmg} damage! Mintoron HP: ${mintoronHP}`;
+    playSound("sword_hit");
+
+    // Mintoron attacks back
+    let mdmg = Math.floor(Math.random() * 150) + 50;
+    hp -= mdmg;
+    story.innerText += `\nMintoron attacks you for ${mdmg} damage! HP: ${hp}`;
+    playSound("roar");
+    updateHealth();
+
+    if(hp <= 0) {
+        story.innerText = "YOU DIED! [SCREAM]";
+        playSound("scream");
+        document.getElementById("buttons").innerHTML = `<button onclick="location.reload()">Restart</button>`;
+    } else if(mintoronHP <= 0) {
+        story.innerText = "YOU DEFEATED MINTORON! VICTORY!";
+        playSound("victory");
+        document.getElementById("buttons").innerHTML = `<button onclick="location.reload()">Restart</button>`;
+    }
+}
+
+function heal() {
+    let story = document.getElementById("story");
+    let healAmt = Math.floor(Math.random() * 30) + 20;
+    hp += healAmt;
+    if(hp > 100) hp = 100;
+    story.innerText += `\nYou heal for ${healAmt} HP. HP: ${hp}`;
+    playSound("heal");
+    updateHealth();
+}
+
+function inventoryFunc() {
+    let story = document.getElementById("story");
+    story.innerText += `\nInventory: ${inventory.join(", ")} | MEGA MONEY: ${megaMoney}`;
+}
+</script>
+
+</body>
+</html>
