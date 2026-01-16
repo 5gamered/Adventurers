@@ -1,95 +1,194 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Adventurers</title>
-    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css">
-    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
-    <style>
-        body { background: black; color: lime; font-family: monospace; text-align:center; padding:30px; }
-        button { font-size:18px; margin:10px; padding:12px 25px; background:darkred; color:white; border:none; cursor:pointer; }
-        #game, #loading { display:none; }
-        #healthbar { width:300px; height:25px; border:2px solid lime; margin:20px auto; }
-        #health { height:100%; width:100%; background:lime; }
-    </style>
-</head>
-<body>
+import time
+import random
+import sys
 
-<h1>🗡️ ADVENTURERS 🗡️</h1>
+# =========================
+# GAME DATA
+# =========================
 
-<div id="menu">
-    <p>⚠️ Rated R — Scary Content ⚠️</p>
-    <button py-click="start_game()">START GAME</button>
-</div>
+# Rooms and connections
+rooms = {
+    'start': {
+        'description': "You wake up in a dark cave. Water drips from the ceiling.",
+        'connections': {'north': 'dark_hall', 'east': 'npc_room'},
+        'items': ['rusty key']
+    },
+    'dark_hall': {
+        'description': "A shadowy hallway stretches before you. You hear growls.",
+        'connections': {'south': 'start', 'north': 'armory'},
+        'items': []
+    },
+    'armory': {
+        'description': "You found an abandoned armory. A dagger lies here.",
+        'connections': {'south': 'dark_hall'},
+        'items': ['dagger']
+    },
+    'npc_room': {
+        'description': "A strange figure stands in the room. They look like they have a quest.",
+        'connections': {'west': 'start'},
+        'items': []
+    },
+    'mintoron_lair': {
+        'description': "You enter a huge chamber. Mintoron stands before you, glowing with power!",
+        'connections': {},
+        'items': []
+    }
+}
 
-<div id="loading">
-    <p>Loading game...</p>
-</div>
+# =========================
+# PLAYER STATE
+# =========================
 
-<div id="game">
-    <p id="story">You wake up in a dark cave...</p>
-    <div id="healthbar"><div id="health"></div></div>
-    <p id="hp_text"></p>
-    <button py-click="explore()">Explore</button>
-    <button py-click="rest()">Rest</button>
-    <button py-click="damage()">Take Damage</button>
-</div>
+player = {
+    'current_room': 'start',
+    'inventory': [],
+    'hp': 100,
+    'mega_money': 0
+}
 
-<py-script>
-# Wait until PyScript fully loads
-import asyncio
-from js import document, console
+# Boss
+mintoron = {
+    'hp': 10000
+}
 
-max_hp = 100
-hp = 100
+# =========================
+# UTILITY FUNCTIONS
+# =========================
 
-def update_health():
-    bar = document.getElementById("health")
-    text = document.getElementById("hp_text")
-    percent = (hp / max_hp) * 100
-    bar.style.width = f"{percent}%"
-    text.innerText = f"Health: {hp} / {max_hp}"
+def type_text(text, delay=0.05):
+    for line in text.split('\n'):
+        print(line)
+        time.sleep(delay)
+
+def divider():
+    print("\n" + "="*70 + "\n")
+
+def show_room():
+    room = rooms[player['current_room']]
+    divider()
+    type_text(room['description'])
+    if room['items']:
+        type_text("Items here: " + ", ".join(room['items']))
+    if room['connections']:
+        type_text("Exits: " + ", ".join(room['connections'].keys()))
+    divider()
 
 def play_sound(name):
-    console.log(f"*{name} sound plays*")
-    document.getElementById("story").innerText += f" [{name.upper()}]"
+    # Fake sound
+    type_text(f"*{name.upper()} SOUND*")
 
-def explore():
-    global hp
-    play_sound("footsteps")
-    document.getElementById("story").innerText = "You explore deeper... a shadow moves!"
-    hp -= 5
-    play_sound("growl")
-    update_health()
-    if hp <= 0:
-        document.getElementById("story").innerText = "YOU DIED. [SCREAM]"
+def npc_interaction():
+    type_text("NPC: 'I need you to defeat Mintoron! Here, take 50 MEGA MONEY as a reward for completing a small task.'")
+    player['mega_money'] += 50
+    type_text(f"You now have {player['mega_money']} MEGA MONEY.")
+
+# =========================
+# GAME LOGIC
+# =========================
+
+def move_player(direction):
+    room = rooms[player['current_room']]
+    if direction not in room['connections']:
+        type_text("You can't go that way!")
+        return
+    player['current_room'] = room['connections'][direction]
+    current = player['current_room']
+    if current == 'npc_room':
+        npc_interaction()
+    if current == 'armory':
+        play_sound("clang")
+    if current == 'mintoron_lair':
+        fight_mintoron()
+
+def take_item(item):
+    room = rooms[player['current_room']]
+    if item in room['items']:
+        room['items'].remove(item)
+        player['inventory'].append(item)
+        type_text(f"You picked up the {item}.")
+        play_sound("pickup")
+    else:
+        type_text("That item is not here.")
+
+def fight_mintoron():
+    type_text("Mintoron roars! Prepare for battle!")
+    while player['hp'] > 0 and mintoron['hp'] > 0:
+        divider()
+        type_text(f"Mintoron HP: {mintoron['hp']} | Your HP: {player['hp']}")
+        type_text("Actions: attack / heal / run")
+        action = input("> ").lower().strip()
+        if action == "attack":
+            if 'dagger' in player['inventory']:
+                dmg = random.randint(100,200)
+            else:
+                dmg = random.randint(5,15)
+            mintoron['hp'] -= dmg
+            type_text(f"You hit Mintoron for {dmg} damage!")
+            play_sound("sword_hit")
+        elif action == "heal":
+            heal = random.randint(20,30)
+            player['hp'] += heal
+            type_text(f"You heal yourself for {heal} HP.")
+            play_sound("heal")
+        elif action == "run":
+            type_text("You cannot escape Mintoron!")
+            continue
+        else:
+            type_text("Invalid action.")
+            continue
+        
+        # Mintoron attacks
+        mdmg = random.randint(50,150)
+        player['hp'] -= mdmg
+        type_text(f"Mintoron attacks you for {mdmg} damage!")
+        play_sound("roar")
+    
+    if player['hp'] <= 0:
+        type_text("YOU DIED. [SCREAM]")
         play_sound("scream")
+        sys.exit()
+    else:
+        type_text("YOU DEFEATED MINTORON! You are victorious!")
+        play_sound("victory")
+        sys.exit()
 
-def rest():
-    global hp
-    hp = min(max_hp, hp + 10)
-    play_sound("zzz")
-    document.getElementById("story").innerText = "You rest and regain some health."
-    update_health()
+def show_inventory():
+    type_text(f"Inventory: {', '.join(player['inventory'])}")
+    type_text(f"MEGA MONEY: {player['mega_money']}")
 
-def damage():
-    global hp
-    hp -= 15
-    play_sound("hit")
-    document.getElementById("story").innerText = "Something hits you!"
-    update_health()
-    if hp <= 0:
-        document.getElementById("story").innerText = "YOU DIED. [SCREAM]"
-        play_sound("scream")
+# =========================
+# MAIN GAME LOOP
+# =========================
 
-async def start_game():
-    document.getElementById("menu").style.display = "none"
-    document.getElementById("loading").style.display = "block"
-    await asyncio.sleep(2)  # Wait 2 seconds for loading
-    document.getElementById("loading").style.display = "none"
-    document.getElementById("game").style.display = "block"
-    update_health()
-    play_sound("mysterious_music_loop")
-</py-script>
+def game_loop():
+    divider()
+    type_text("ADVENTURERS — BETA 1.0")
+    type_text("Survive the cave, find items, complete quests, defeat Mintoron!")
+    divider()
+    
+    while True:
+        show_room()
+        type_text(f"HP: {player['hp']}")
+        type_text("Enter command (go [direction], take [item], inventory, quit)")
+        cmd = input("> ").lower().strip()
+        words = cmd.split()
+        if not words:
+            continue
+        if words[0] == "quit":
+            type_text("Thanks for playing Adventurers!")
+            break
+        elif words[0] == "inventory":
+            show_inventory()
+        elif words[0] == "go" and len(words) > 1:
+            move_player(words[1])
+        elif words[0] == "take" and len(words) > 1:
+            take_item(" ".join(words[1:]))
+        else:
+            type_text("Unknown command. Try again.")
 
-</body>
-</html>
+# =========================
+# START GAME
+# =========================
+
+if __name__ == "__main__":
+    game_loop()
